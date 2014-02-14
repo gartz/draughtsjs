@@ -1,0 +1,165 @@
+#draughts > div {
+  float: left;
+}
+
+#dash {
+  margin-left: 10px;
+  border: outset 10px gray;
+  height: 400px;
+}
+
+#dash > div {
+  float: left;
+  width: 100px;
+  height: 100%;
+}
+
+#dash > div > h3 {
+  text-align: center;
+}
+
+#dash > .player0 > h3 {
+  color: blue;
+}
+
+#dash > .player1 > h3 {
+  color: red;
+}
+
+#dash > div > div {
+  width: 100%;
+  height: 100%;
+  float: left;
+}
+
+#banner-msg {
+  position: absolute;
+  margin-left: 22%;
+  margin-top: 15%;
+  background-color: white;
+  border: solid green 2px;
+  padding: 10px;
+}
+
+#dash > div > div > div {
+  width: 50px;
+  height: 50px;
+  float: left;
+}
+
+#board {
+    width: 400px;
+    height: 400px;
+    border: outset 10px gray;
+}
+
+#board > div {
+    float: left;
+    background-color: darkgray;
+}
+
+#board.size8 > div {
+    width: 12.5%;
+    height: 12.5%;
+}
+
+#board.size10 > div {
+    width: 10%;
+    height: 10%;
+}
+
+#board > div.disabled {
+    background-color: #fafafa;
+}
+
+#draughts a {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+#draughts a.queen > img {
+    width: 47%;
+    position: relative;
+    top: -25px;
+    left: 13px;
+    /* IE8 add a very beatiful fashion border */
+    border: 0;
+    /* IE8 don't keep the aspect... shame on you! */
+    height: 47%;
+}
+
+#draughts a.move {
+    background-color: chocolate;
+    opacity: 0.40;
+}
+
+#draughts a.move:hover {
+    background-color: chocolate;
+    opacity: 0.60;
+    box-shadow: 0 0 15px 5px rgba(255, 255, 0, 1);
+    -webkit-box-shadow: 0 0 15px 5px rgba(255, 255, 0, 1);
+    -moz-box-shadow: 0 0 15px 5px rgba(255, 255, 0, 1);
+}
+
+#draughts a:focus,
+#draughts a.focus {
+    background-color: #666;
+}
+
+#draughts a[href]:hover > div,
+#draughts a.selected > div {
+    box-shadow: 0 0 15px 5px rgba(255, 255, 0, 1);
+    -webkit-box-shadow: 0 0 15px 5px rgba(255, 255, 0, 1);
+    -moz-box-shadow: 0 0 15px 5px rgba(255, 255, 0, 1);
+}
+
+#draughts a > div {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    
+    box-shadow: inset #333 0 -3px 0 0;
+    -moz-box-shadow: inset #333 0 -3px 0 0;
+    -webkit-box-shadow: inset #333 0 -3px 0 0;
+    
+    /* keep the anchor in the right place this way */
+    position: relative;
+    left: 10%;
+    top: 10%;
+}
+
+#draughts a > div > div {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    
+    box-shadow: inset #333 1px 2px 2px 1px;
+    -moz-box-shadow: inset #333 1px 2px 2px 1px;
+    -webkit-box-shadow: inset #333 1px 2px 2px 1px;
+    
+    /* keep the anchor in the right place this way */
+    position: relative;
+    left: 10%;
+    top: 10%;
+}
+
+#draughts a.player0 > div {
+    background: blue;
+}
+
+#draughts a.player1 > div {
+    background: red;
+}
+
+
+/* Prevent the text contents from being selectable. */
+* {
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Required to make elements draggable in old WebKit */
+  -khtml-user-drag: element;
+  -webkit-user-drag: element;
+}
