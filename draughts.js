@@ -140,6 +140,8 @@ if (!Array.prototype.filter) {
 //     Dispatch when change the turn value
 // - destroyboard
 //     Dispatch when the board is destroyed (every field is removed)
+// - addedfield
+//     Dispatch when the field is appended to the board element
 
 
 function DraugthsBoard(opt) {
@@ -149,20 +151,46 @@ function DraugthsBoard(opt) {
     if (typeof opt !== 'object') {
         opt = {};
     }
+    
+    // Setup the HTMLElement to be the board
+    this.element = opt.element || document.createElement('div');
+    
+    // Only because IE8 doesn't support Object.defineProperty I need to
+    // substitute the previous div, if already has size defined for a new one
+    // or the defineProperty wont work as expected
+    if (this.element.size) {
+        var parentEl = this.element.parentElement;
+        var oldEl = this.element;
+        this.element = document.createElement('div');
+        this.element.id = oldEl.id;
+        this.element.className = oldEl.className;
+        if (parentEl) {
+            parentEl.insertBefore(this.element, oldEl);
+            parentEl.removeChild(oldEl);
+        }
+        
+    }
+    
+    this.element.data = this;
+    
     // Set default board size to 8 if is a invalid value
     var size = !isNaN(opt.size) && (+ opt.size) % 2 === 0 ? + opt.size : 8;
+    if (size < 5) {
+        throw new Error('Board size must be greater then 5');
+    }
+    
+    // Constants or get/set need to be in the element because of IE8
     
     // Size is a constant from the board
-    Object.defineProperty(this, 'size', {
+    Object.defineProperty(this.element, 'size', {
         get: function () {
             return size;
-        },
-        set: function () {}
+        }
     });
     
-    // Size is a constant from the board
+    // Number of turns played
     var turn = 0;
-    Object.defineProperty(this, 'turn', {
+    Object.defineProperty(this.element, 'turn', {
         get: function () {
             return turn;
         },
@@ -183,16 +211,7 @@ function DraugthsBoard(opt) {
         }
     });
     
-    // Number of turns played
     
-    // Setup the HTMLElement to be the board
-    if (opt.element && opt.element instanceof HTMLElement) {
-        this.element = opt.element;
-    } else {
-        this.element = document.createElement('div');
-    }
-    
-    this.element.data = this;
     
     // Set the size class
     this.element.className += ' size' + size;
@@ -207,10 +226,15 @@ function DraugthsBoard(opt) {
         }
         
         var pos = event.detail.position;
+        var fieldEl = event.detail.field.element;
+        var s = 100 / this.size;
+        
+        // Set the field size idependent of CSS
+        fieldEl.setAttribute('style', 'width: ' + s + '%;height: ' + s + '%;');
         
         // Check if the field need to be disabled (white color)
-        if (pos % 2 === (pos / this.data.size << 0) % 2) {
-            event.detail.field.element.className = 'disabled';
+        if (pos % 2 === (pos / this.size << 0) % 2) {
+            fieldEl.className = 'disabled';
         }
     });
     
@@ -230,6 +254,11 @@ DraugthsBoard.prototype = {
         // Bind dispatchEvent
 
         this.element.dispatchEvent.apply(this.element, arguments);
+    },
+    size: function () {
+        // Bind dispatchEvent
+
+        return this.element.size;
     },
     destroy: function () {
         // Remove all childrens from the board
@@ -251,7 +280,7 @@ DraugthsBoard.prototype = {
             this.destroy();
         }
         
-        var size = this.size;
+        var size = this.size();
         
         for (var i = 0; i < size * size; i++) {
             var field = new DraugthsBoardField(i / size << 0, i % size);
@@ -291,8 +320,19 @@ function DraugthsBoardField(line, column) {
 
 window.addEventListener('load', function () {
     //TODO: querySelectorAll -> forEach #draughts
+    
+    var draughts = document.querySelectorAll('#draughts')[1];
+    
     var board = new DraugthsBoard({
-        element: document.querySelectorAll('#draughts')[1].querySelector('#board')
+        element: draughts.querySelector('#board'),
+        size: 8
+    });
+    
+    draughts.querySelector('#size').addEventListener('change', function (e) {
+        board = new DraugthsBoard({
+            element: draughts.querySelector('#board'),
+            size: this.value || e.srcElement.value
+        });
     });
     
 });
