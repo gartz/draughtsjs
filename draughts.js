@@ -1,3 +1,4 @@
+/*global CustomEvent, MouseEvent, HTMLDocument*/
 (function () {
     if (Element.prototype.addEventListener || !Object.defineProperty) {
         return;
@@ -98,46 +99,203 @@ if (!('forEach' in Array.prototype)) {
                 action.call(that, this[i], i);
     };
 }
-if(typeof String.prototype.trim !== 'function') {
+if (typeof String.prototype.trim !== 'function') {
     String.prototype.trim = function() {
         return this.replace(/^\s+|\s+$/g, ''); 
     };
 }
-if (!Array.prototype.filter)
-{
-  Array.prototype.filter = function(fun /*, thisArg */)
-  {
-    'use strict';
-
-    if (this === void 0 || this === null)
-      throw new TypeError();
-
-    var t = Object(this);
-    var len = t.length >>> 0;
-    if (typeof fun != 'function')
-      throw new TypeError();
-
-    var res = [];
-    var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-    for (var i = 0; i < len; i++)
-    {
-      if (i in t)
-      {
-        var val = t[i];
-
-        // NOTE: Technically this should Object.defineProperty at
-        //       the next index, as push can be affected by
-        //       properties on Object.prototype and Array.prototype.
-        //       But that method's new, and collisions should be
-        //       rare, so use the more-compatible alternative.
-        if (fun.call(thisArg, val, i, t))
-          res.push(val);
-      }
-    }
-
-    return res;
-  };
+if (!Array.prototype.filter) {
+    Array.prototype.filter = function(fun /*, thisArg */) {
+        'use strict';
+        
+        if (this === void 0 || this === null)
+            throw new TypeError();
+        
+        var t = Object(this);
+        var len = t.length >>> 0;
+        if (typeof fun != 'function')
+            throw new TypeError();
+        
+        var res = [];
+        var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+        for (var i = 0; i < len; i++) {
+            if (i in t) {
+                var val = t[i];
+                
+                // NOTE: Technically this should Object.defineProperty at
+                //       the next index, as push can be affected by
+                //       properties on Object.prototype and Array.prototype.
+                //       But that method's new, and collisions should be
+                //       rare, so use the more-compatible alternative.
+                if (fun.call(thisArg, val, i, t)) res.push(val);
+            }
+        }
+        
+        return res;
+    };
 }
+// Events:
+//
+// - changeturn
+//     Dispatch when change the turn value
+// - destroyboard
+//     Dispatch when the board is destroyed (every field is removed)
+
+
+function DraugthsBoard(opt) {
+    // Data from a DraugthsBoard element
+    
+    // Ensure options object
+    if (typeof opt !== 'object') {
+        opt = {};
+    }
+    // Set default board size to 8 if is a invalid value
+    var size = !isNaN(opt.size) && (+ opt.size) % 2 === 0 ? + opt.size : 8;
+    
+    // Size is a constant from the board
+    Object.defineProperty(this, 'size', {
+        get: function () {
+            return size;
+        },
+        set: function () {}
+    });
+    
+    // Size is a constant from the board
+    var turn = 0;
+    Object.defineProperty(this, 'turn', {
+        get: function () {
+            return turn;
+        },
+        set: function (val) {
+            if (isNaN(val)) throw new Error('Invalid turn');
+            var old = turn;
+            turn = + val;
+
+            // It's useful old value from turn to validate if you jump over
+            // turns for future online features
+            var event = new CustomEvent('changeturn', { 'detail': {
+                oldValue: old,
+                value: turn
+            }});
+
+            // trigger draughts
+            this.element.dispatchEvent(event);
+        }
+    });
+    
+    // Number of turns played
+    
+    // Setup the HTMLElement to be the board
+    if (opt.element && opt.element instanceof HTMLElement) {
+        this.element = opt.element;
+    } else {
+        this.element = document.createElement('div');
+    }
+    
+    this.element.data = this;
+    
+    // Set the size class
+    this.element.className += ' size' + size;
+    
+    // Default triggers
+    this.element.addEventListener('addedfield', function (event) {
+        // When a field is added to the board, setup it 
+        
+        // no default? just leave...
+        if (event.defaultPrevented) {
+            return;
+        }
+        
+        var pos = event.detail.position;
+        
+        // Check if the field need to be disabled (white color)
+        if (pos % 2 === (pos / this.data.size << 0) % 2) {
+            event.detail.field.element.className = 'disabled';
+        }
+    });
+    
+    // Create the board
+    this.create();
+}
+
+DraugthsBoard.prototype = {
+    // no Object.observer... No problem! Let's use the element to have event
+    // listeners
+    addEventListener: function () {
+        // Bind addEventListener
+
+        this.element.addEventListener.apply(this.element, arguments);
+    },
+    dispatchEvent: function () {
+        // Bind dispatchEvent
+
+        this.element.dispatchEvent.apply(this.element, arguments);
+    },
+    destroy: function () {
+        // Remove all childrens from the board
+
+        while (this.element.children.length > 0) {
+            this.element.removeChild(this.element.children[0]);
+        }
+        
+        var event = new CustomEvent('destroyboard');
+
+        // trigger draughts
+        this.element.dispatchEvent(event);
+    },
+    create: function () {
+        // Create the board based on the options passed
+        
+        // Before create remove all childrens
+        if (this.element.children.length > 0) {
+            this.destroy();
+        }
+        
+        var size = this.size;
+        
+        for (var i = 0; i < size * size; i++) {
+            var field = new DraugthsBoardField(i / size << 0, i % size);
+            
+            // Append field element as board element children
+            this.element.appendChild(field.element);
+            
+            var event = new CustomEvent('addedfield', {
+                'detail': {
+                    field: field,
+                    position: i
+                    }
+                });
+
+            // trigger draughts
+            this.element.dispatchEvent(event);
+        }
+    }
+};
+
+function DraugthsBoardField(line, column) {
+    // Data from a Field element of a DraugthsBoard
+    
+    var field = document.createElement('div');
+    this.element = field;
+    field.data = this;
+    
+    this.line = line;
+    this.column = column;
+    
+    // Add class to the field, let search using querySelector
+    // ... not using dataset because of IE8
+    field.className += ' line' + line;
+    field.className += ' column' + column;
+}
+
+
+window.addEventListener('load', function () {
+    //TODO: querySelectorAll -> forEach #draughts
+    var board = new DraugthsBoard({
+        element: document.querySelectorAll('#draughts')[1].querySelector('#board')
+    });
+    
+});
 
 window.addEventListener('load', function () {
     // Load with hash 8 for a 8x8 board or 10 for 10x10 international board
@@ -157,6 +315,7 @@ window.addEventListener('load', function () {
         field.detail = field.detail || {};
         field.detail.column = i % BOARD_SIZE;
         field.detail.line = i / BOARD_SIZE << 0;
+        
         // Using class make a shortcut because IE9- doesn't support dataset
         field.className += ' column' + field.detail.column;
         field.className += ' line' + field.detail.line;
