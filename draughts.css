@@ -68,7 +68,8 @@
     height: 10%;
 }
 
-#board > div.disabled {
+#board > div.disabled,
+#board > div.white{
     background-color: #fafafa;
 }
 
