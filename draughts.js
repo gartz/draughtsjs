@@ -669,7 +669,7 @@ if (!Array.prototype.filter) {
                 return;
             }
             
-            piece.data.attacks++;
+            piece.data.attackTurn++;
             var attacks = piece.data.allowedAttacks();
             
             if (attacks.length > 0) {
@@ -693,6 +693,34 @@ if (!Array.prototype.filter) {
             });
             
             piece.dispatchEvent(clickEvent);
+        });
+        
+        this.element.addEventListener('piecemove', function (event) {
+            // Check if hit the other border of board and transform a piece in
+            // a queen piece
+            
+            var piece = event.detail.piece;
+            var toField = event.detail.toField;
+            
+            var bottomBorder = toField.data.line === this.size - 1;
+            var topBorder = toField.data.line === 0;
+            
+            if (!bottomBorder && !topBorder) {
+                return;
+            }
+            
+            var playerId = piece.data.player();
+            
+            if (playerId === 0 && !bottomBorder) {
+                return;
+            }
+            if (playerId === 1 && !topBorder) {
+                return;
+            }
+            
+            new DraughtsPieceQueen({
+                extend: piece
+            });
         });
         
         // Create the board
@@ -869,8 +897,6 @@ if (!Array.prototype.filter) {
         } else {
             this.element.className += ' player1';
         }
-        
-        this.attacks = 0;
     }
     
     DraughtsPiece.prototype = {
@@ -905,7 +931,7 @@ if (!Array.prototype.filter) {
             var opponentId = this.player() ^ 1;
             
             var attacks = [];
-            var isABK = this.board.allowBackwardAttack && this.attacks > 0;
+            var isABK = this.board.allowBackwardAttack && this.attackTurn > 0;
             
             this.findNextFields(field, isABK).forEach(function (atkField) {
                 var opponent = atkField.querySelector('a.player' + opponentId);
@@ -1003,7 +1029,7 @@ if (!Array.prototype.filter) {
             this.board.dispatchEvent(event);
             if (event.detail.changeTurn) {
                 // Change the player turn
-                this.attacks = 0;
+                this.attackTurn = 0;
                 this.board.turn++;
             }
         },
@@ -1034,7 +1060,33 @@ if (!Array.prototype.filter) {
         }
     };
     
-    function DraughtsPieceQueen() {}
+    function DraughtsPieceQueen(opt) {
+        var piece = opt.extend;
+        
+        this.extend = piece.data;
+        if (!this.extend) {
+            //TODO: Create a new piece
+        }
+        
+        piece.data = this;
+        this.element = piece;
+        
+        var field = opt.field || piece.parentElement;
+        
+        piece.className += ' queen';
+        
+        for (var prop in this.extend) if (this.extend.hasOwnProperty(prop)) {
+            this[prop] = this.extend[prop];
+        }
+        
+        // Can use background image on CSS, but it fails on IE8, need hacks
+        var img = new Image();
+        img.src = 'Trollface.png';
+        var lastEl = piece.querySelectorAll('*');
+        // IE8 don't support pseudo selectors like :last
+        lastEl = lastEl[lastEl.length - 1];
+        lastEl.appendChild(img);
+    }
     
     function DraughtsPieceQueenPrototype() {
         this.allowedMoves = function () {
@@ -1084,6 +1136,14 @@ window.addEventListener('load', function () {
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 0],
             [0, 0, 0, 2, 0, 2, 0, 0]
+        ],
+        queen: [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 2, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0]
         ]
     };
     
@@ -1091,7 +1151,7 @@ window.addEventListener('load', function () {
         element: draughts.querySelector('#board'),
         size: 8,
         turn: 1,
-        map: maps.twiceAttack
+        map: maps.queen
     };
     
     var board = new DraughtsBoard(opt);

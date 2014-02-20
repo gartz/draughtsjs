@@ -90,6 +90,16 @@
     height: 47%;
 }
 
+#draughts a.queen div > div > img {
+    width: 70%;
+    position: relative;
+    margin: 15%;
+    /* IE8 add a very beatiful fashion border */
+    border: 0;
+    /* IE8 don't keep the aspect... shame on you! */
+    height: 70%;
+}
+
 #draughts a.move {
     background-color: chocolate;
     opacity: 0.40;
