@@ -1,3 +1,7 @@
+* {
+    font-family: monospace;
+}
+
 #draughts > div {
   float: left;
 }

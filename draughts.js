@@ -288,7 +288,7 @@ if (!Array.prototype.filter) {
             }
         });
         
-        // Set default value to forcePieceHold as false
+        // Set default value to forcePieceHold as true
         var forcePieceHold = opt.forcePieceHold === true;
         
         // ForceAttack is a constant from the board
@@ -308,13 +308,23 @@ if (!Array.prototype.filter) {
             }
         });
         
-        // Set default value to allowBackwardAttack as false
+        // Set default value to allowBackwardAttack as true
         var allowBackwardAttack = opt.allowBackwardAttack === true;
         
         // ForceAttack is a constant from the board
         Object.defineProperty(this.element, 'allowBackwardAttack', {
             get: function () {
                 return allowBackwardAttack;
+            }
+        });
+        
+        // Set default value to allowQueenAttackRun as false
+        var allowQueenAttackRun = opt.allowQueenAttackRun === true;
+        
+        // ForceAttack is a constant from the board
+        Object.defineProperty(this.element, 'allowQueenAttackRun', {
+            get: function () {
+                return allowQueenAttackRun;
             }
         });
         
@@ -491,7 +501,17 @@ if (!Array.prototype.filter) {
                 moves.forEach(function (piece) {
                     piece.data.allowMove();
                 });
+                return;
             }
+            
+            var gameoverEvent = new CustomEvent('gameover', { 'detail': {
+                winner: player ^ 1,
+                motive: 'no_more_moves',
+                turn: turn - 1
+            }});
+            
+            // trigger draughts
+            draughts.dispatchEvent(gameoverEvent);
         });
         
         this.element.addEventListener('mousedown', function (event) {
@@ -1111,6 +1131,7 @@ if (!Array.prototype.filter) {
     function DraughtsPieceQueenPrototype() {
         this.allowedMoves = function (field) {
             // Queen always can walkback
+
             var moves = this.findNextFields(field, true).filter(function (el) {
                 return el.children.length === 0;
             });
@@ -1134,8 +1155,6 @@ if (!Array.prototype.filter) {
             return moves;
         };
         this.allowedAttacks = function () {
-            
-            // Queen always can walkback
             var arr = Array.prototype.slice.call(arguments);
             arr[1] = true;
             var attacks = DraughtsPiece.prototype.allowedAttacks.apply(this, arr);
@@ -1155,6 +1174,28 @@ if (!Array.prototype.filter) {
                     DraughtsPiece.prototype.allowedAttacks.call(this, field, dir)
                 );
             }.bind(this));
+            
+            if (!this.board.allowQueenAttackRun) {
+                return attacks;
+            }
+            
+            for (var i = 0; i < attacks.length; i++) {
+                var attack = attacks[i];
+                var line = this.element.parentElement.data.line;
+                var dir = attack.field.data.line > line;
+                dir = dir ^ (this.player() ^ 1);
+                
+                var fields = this.findNextFields(attack.field, dir);
+                fields.forEach(function (field) {
+                    if (field.children.length !== 0) {
+                        return;
+                    }
+                    attacks.push({
+                        field: field,
+                        opponent: attack.opponent
+                    })
+                });
+            }
             
             return attacks;
         };
@@ -1223,12 +1264,13 @@ window.addEventListener('load', function () {
             [0, 0, 0, 0, 0, 3, 0, 0]
         ],
         queenStarAttack: [
-            [0, 0, 0, 0, 0, 0, 0, 0],
+            [3, 0, 0, 0, 0, 0, 0, 0],
             [0, 3, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 3, 0, 0, 0],
             [0, 0, 0, 4, 0, 0, 0, 0],
             [0, 0, 0, 0, 3, 0, 0, 0],
-            [0, 3, 0, 0, 0, 0, 0, 0]
+            [0, 3, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 3, 0]
         ]
         
     };
@@ -1236,8 +1278,8 @@ window.addEventListener('load', function () {
     var opt = {
         element: draughts.querySelector('#board'),
         size: 8,
-        turn: 1,
-        map: maps.queenStarAttack
+        turn: 0,
+        map: maps.queenRunAttack
     };
     
     var board = new DraughtsBoard(opt);
@@ -1258,5 +1300,23 @@ window.addEventListener('load', function () {
     draughts.querySelector('#forcehold').addEventListener('change', updateBoard);
     draughts.querySelector('#backwardattack').addEventListener('change', updateBoard);
     draughts.querySelector('#queenfreerun').addEventListener('change', updateBoard);
+    draughts.querySelector('#queenattackrun').addEventListener('change', updateBoard);
     
+    // When gameover display the banner-msg
+    draughts.addEventListener('gameover', function (event) {
+        var banner = draughts.querySelector('#banner-msg');
+        
+        var player = banner.querySelector('h2');
+        // Using innerHTML because IE8 doesn't have textContent
+        player.innerHTML = 'Player' + (event.detail.winner + 1);
+        
+        banner.style.display = 'block';
+    });
+    
+    // Disable drag events on the body
+    window.addEventListener('dragstart', function (event) {
+        // IE8 doesn't have preventDefault, need to return null
+        event.preventDefault && event.preventDefault();
+        return;
+    });
 });
