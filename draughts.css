@@ -79,17 +79,6 @@
     display: block;
 }
 
-#draughts a.queen > img {
-    width: 47%;
-    position: relative;
-    top: -25px;
-    left: 13px;
-    /* IE8 add a very beatiful fashion border */
-    border: 0;
-    /* IE8 don't keep the aspect... shame on you! */
-    height: 47%;
-}
-
 #draughts a.queen div > div > img {
     width: 70%;
     position: relative;
