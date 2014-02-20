@@ -95,7 +95,9 @@
     };
     
     // setup the Element dispatchEvent used to trigger events on the board
+    HTMLDocument.prototype.dispatchEvent = dispatchEventFunc;
     Element.prototype.dispatchEvent = dispatchEventFunc;
+    window.dispatchEvent = dispatchEventFunc;
 })();
 
 // modern browser support forEach, probably will be IE8
@@ -866,7 +868,7 @@ if (!Array.prototype.filter) {
             // Register attacked pieces in the mask
             if (opt.attack) {
                 if (opt.attack instanceof Array) {
-                    mask.data.opponent.merge(opt.attack);
+                    mask.data.opponent = mask.data.opponent.concat(opt.attack);
                 } else {
                     mask.data.opponent.push(opt.attack);
                 }
@@ -1131,26 +1133,30 @@ if (!Array.prototype.filter) {
             
             return moves;
         };
-        this.findNextFields = function () {
-            var def = DraughtsPiece.prototype.findNextFields.apply(this, arguments);
-            return def;
-        };
         this.allowedAttacks = function () {
             
             // Queen always can walkback
             var arr = Array.prototype.slice.call(arguments);
             arr[1] = true;
-            var def = DraughtsPiece.prototype.allowedAttacks.apply(this, arr);
+            var attacks = DraughtsPiece.prototype.allowedAttacks.apply(this, arr);
             
-            return def;
-        };
-        this.moveTo = function (field) {
+            if (!this.board.allowQueenRun) {
+                return attacks;
+            }
             
-            return DraughtsPiece.prototype.moveTo.apply(this, arguments);
-        };
-        this.attack = function (opponent, field) {
+            var moves = this.allowedMoves();
+            //TODO: Incrase the eficience in this loop... Is necessary iterate all?
+            moves.forEach(function (field) {
+                var line = this.element.parentElement.data.line;
+                var dir = field.data.line > line;
+                dir = dir ^ (this.player() ^ 1);
+                
+                attacks = attacks.concat(
+                    DraughtsPiece.prototype.allowedAttacks.call(this, field, dir)
+                );
+            }.bind(this));
             
-            return DraughtsPiece.prototype.attack.apply(this, arguments);
+            return attacks;
         };
     }
     
@@ -1207,14 +1213,31 @@ window.addEventListener('load', function () {
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 3, 0, 3, 0],
             [0, 0, 0, 4, 0, 4, 0, 0]
+        ],
+        queenRunAttack: [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 3, 0, 0, 0, 4, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 3, 0, 4, 0, 0, 0],
+            [0, 0, 0, 0, 0, 3, 0, 0]
+        ],
+        queenStarAttack: [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 3, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 4, 0, 0, 0, 0],
+            [0, 0, 0, 0, 3, 0, 0, 0],
+            [0, 3, 0, 0, 0, 0, 0, 0]
         ]
+        
     };
     
     var opt = {
         element: draughts.querySelector('#board'),
         size: 8,
         turn: 1,
-        map: maps.twiceQueenAttack
+        map: maps.queenStarAttack
     };
     
     var board = new DraughtsBoard(opt);
@@ -1226,6 +1249,7 @@ window.addEventListener('load', function () {
         opt.forcePieceHold = draughts.querySelector('#forcehold').checked;
         opt.allowBackwardAttack = draughts.querySelector('#backwardattack').checked;
         opt.allowQueenRun = draughts.querySelector('#queenfreerun').checked;
+        opt.allowQueenAttackRun = draughts.querySelector('#queenattackrun').checked;
         board = new DraughtsBoard(opt);
     }
     
