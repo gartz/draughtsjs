@@ -297,6 +297,16 @@ if (!Array.prototype.filter) {
         });
         
         // Set default value to allowBackwardAttack as false
+        var allowQueenRun = opt.allowQueenRun !== false;
+        
+        // ForceAttack is a constant from the board
+        Object.defineProperty(this.element, 'allowQueenRun', {
+            get: function () {
+                return allowQueenRun;
+            }
+        });
+        
+        // Set default value to allowBackwardAttack as false
         var allowBackwardAttack = opt.allowBackwardAttack === true;
         
         // ForceAttack is a constant from the board
@@ -924,14 +934,15 @@ if (!Array.prototype.filter) {
                 return el.children.length === 0;
             });
         },
-        allowedAttacks: function (field) {
+        allowedAttacks: function (field, allowBackwardAttack) {
             // Return a list of objects contain the destine field and opponent
             // piece
             
             var opponentId = this.player() ^ 1;
             
             var attacks = [];
-            var isABK = this.board.allowBackwardAttack && this.attackTurn > 0;
+            allowBackwardAttack = allowBackwardAttack || this.board.allowBackwardAttack;
+            var isABK = allowBackwardAttack && this.attackTurn > 0;
             
             this.findNextFields(field, isABK).forEach(function (atkField) {
                 var opponent = atkField.querySelector('a.player' + opponentId);
@@ -1063,10 +1074,15 @@ if (!Array.prototype.filter) {
     function DraughtsPieceQueen(opt) {
         var piece = opt.extend;
         
-        this.extend = piece.data;
-        if (!this.extend) {
-            //TODO: Create a new piece
+        if (piece && piece.data && piece.data instanceof DraughtsPieceQueen) {
+            return;
         }
+        
+        if (!piece) {
+            piece = (new DraughtsPiece(opt)).element;
+        }
+        
+        this.extend = piece.data;
         
         piece.data = this;
         this.element = piece;
@@ -1089,13 +1105,42 @@ if (!Array.prototype.filter) {
     }
     
     function DraughtsPieceQueenPrototype() {
-        this.allowedMoves = function () {
+        this.allowedMoves = function (field) {
+            // Queen always can walkback
+            var moves = this.findNextFields(field, true).filter(function (el) {
+                return el.children.length === 0;
+            });
             
-            return DraughtsPiece.prototype.allowedMoves.apply(this, arguments);
+            if (this.board.allowQueenRun) {
+                for (var i = 0; i < moves.length; i++) {
+                    var line = this.element.parentElement.data.line;
+                    var dir = moves[i].data.line > line;
+                    dir = dir ^ (this.player() ^ 1);
+                    var fields = this.findNextFields(moves[i], dir)
+                                        .filter(function (el) {
+                        return el.children.length === 0;
+                    });
+                    if (fields.length === 0) {
+                        continue;
+                    }
+                    moves.push(fields[0]);
+                }
+            }
+            
+            return moves;
+        };
+        this.findNextFields = function () {
+            var def = DraughtsPiece.prototype.findNextFields.apply(this, arguments);
+            return def;
         };
         this.allowedAttacks = function () {
             
-            return DraughtsPiece.prototype.allowedAttacks.apply(this, arguments);
+            // Queen always can walkback
+            var arr = Array.prototype.slice.call(arguments);
+            arr[1] = true;
+            var def = DraughtsPiece.prototype.allowedAttacks.apply(this, arr);
+            
+            return def;
         };
         this.moveTo = function (field) {
             
@@ -1137,13 +1182,29 @@ window.addEventListener('load', function () {
             [0, 0, 0, 0, 1, 0, 1, 0],
             [0, 0, 0, 2, 0, 2, 0, 0]
         ],
-        queen: [
+        beTheQueen: [
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 2, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 1, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0]
+        ],
+        queens: [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 4, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 3, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0]
+        ],
+        twiceQueenAttack: [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 3, 0, 3, 0, 3, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 3, 0, 3, 0],
+            [0, 0, 0, 4, 0, 4, 0, 0]
         ]
     };
     
@@ -1151,7 +1212,7 @@ window.addEventListener('load', function () {
         element: draughts.querySelector('#board'),
         size: 8,
         turn: 1,
-        map: maps.queen
+        map: maps.queens
     };
     
     var board = new DraughtsBoard(opt);
@@ -1162,6 +1223,7 @@ window.addEventListener('load', function () {
         opt.forceAttack = draughts.querySelector('#forceattack').checked;
         opt.forcePieceHold = draughts.querySelector('#forcehold').checked;
         opt.allowBackwardAttack = draughts.querySelector('#backwardattack').checked;
+        opt.allowQueenRun = draughts.querySelector('#queenfreerun').checked;
         board = new DraughtsBoard(opt);
     }
     
@@ -1169,6 +1231,7 @@ window.addEventListener('load', function () {
     draughts.querySelector('#forceattack').addEventListener('change', updateBoard);
     draughts.querySelector('#forcehold').addEventListener('change', updateBoard);
     draughts.querySelector('#backwardattack').addEventListener('change', updateBoard);
+    draughts.querySelector('#queenfreerun').addEventListener('change', updateBoard);
     
 });
 
