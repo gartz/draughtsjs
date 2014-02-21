@@ -183,6 +183,9 @@ if (!Array.prototype.filter) {
         while(el.className.match(match) === null && el.parentElement) {
             el = el.parentElement;
         }
+        if (!el.className.match(match)) {
+            return;
+        }
         return el;
     }
     
@@ -523,6 +526,10 @@ if (!Array.prototype.filter) {
             }
             
             var piece = closestPieceElement(event.target || event.srcElement);
+            
+            if (!piece) {
+                return;
+            }
             piece.focus();
         });
         
@@ -560,6 +567,97 @@ if (!Array.prototype.filter) {
         this.element.addEventListener('mousedown', pieceHoldDispatcher);
         // Click is for click and when you keydown enter key, it dispatch click
         this.element.addEventListener('click', pieceHoldDispatcher);
+        
+        // Drag'n'dropp effect, not use standart because it always clone the
+        // view element
+        var dragging;
+        this.element.addEventListener('mousedown', function (event) {
+            // If clicking in a piece, dipatch piecehold if is possible
+
+            // no default just leave...
+            if (event.defaultPrevented) {
+                return;
+            }
+            
+            var piece = closestPieceElement(event.target || event.srcElement);
+            
+            if (!piece) {
+                return;
+            }
+            
+            if (piece.className.indexOf('focus') === -1) {
+                return;
+            }
+            
+            dragging = {
+                piece: piece,
+                x: event.clientX,
+                y: event.clientY
+            };
+            piece.className += ' startdrag';
+        });
+        
+        this.element.addEventListener('mousemove', function (event) {
+            if (!dragging) {
+                return;
+            }
+            
+            var field = dragging.piece.parentElement;
+            
+            var x = event.clientX - dragging.x;
+            var y = event.clientY - dragging.y;
+            
+            dragging.piece.style.left = x + 'px';
+            dragging.piece.style.top = y + 'px';
+            
+            var masks = this.querySelectorAll('.move');
+            
+            dragging.mask = undefined;
+            Array.prototype.slice.call(masks).forEach(function (mask) {
+                mask.blur();
+                if (!(mask.offsetTop < event.clientY)) {
+                    return;
+                }
+                if (!(mask.offsetTop + mask.offsetHeight > event.clientY)) {
+                    return;
+                }
+                if (!(mask.offsetLeft < event.clientX)) {
+                    return;
+                }
+                if (!(mask.offsetLeft + mask.offsetWidth > event.clientX)) {
+                    return;
+                }
+                dragging.mask = mask;
+                mask.focus();
+            });
+        });
+
+        this.element.addEventListener('mouseup', function (event) {
+            // If clicking in a piece, dipatch piecehold if is possible
+
+            // no default just leave...
+            if (event.defaultPrevented || !dragging) {
+                return;
+            }
+            
+            var piece = dragging.piece;
+            piece.className = piece.className.replace('startdrag', '');
+            piece.style.left = '';
+            piece.style.top = '';
+            
+            if (dragging.mask) {
+                var clickEvent = new MouseEvent('click', {
+                    'view': window,
+                    'bubbles': true,
+                    'cancelable': true,
+                    'target': piece
+                });
+                
+                dragging.mask.dispatchEvent(clickEvent);
+            }
+            
+            dragging = undefined;
+        });
         
         this.element.addEventListener('click', function (event) {
             // If clicking in a mask, dipatch piecerelease if is holding a piece
@@ -1110,8 +1208,6 @@ if (!Array.prototype.filter) {
         
         piece.data = this;
         this.element = piece;
-        
-        var field = opt.field || piece.parentElement;
         
         piece.className += ' queen';
         

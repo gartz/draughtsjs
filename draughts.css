@@ -83,6 +83,12 @@
     display: block;
 }
 
+#draughts #board a.startdrag {
+    position: relative;
+    background-color: initial;
+    z-index: 100000;
+}
+
 #draughts a.queen div > div > img {
     width: 70%;
     position: relative;
@@ -98,7 +104,8 @@
     opacity: 0.40;
 }
 
-#draughts a.move:hover {
+#draughts a.move:hover,
+#draughts a.move:focus {
     background-color: chocolate;
     opacity: 0.60;
     box-shadow: 0 0 15px 5px rgba(255, 255, 0, 1);
