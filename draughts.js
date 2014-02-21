@@ -1445,6 +1445,24 @@ window.addEventListener('load', function () {
             }
             
         });
+        
+        board.element.addEventListener('piecemove', function (event) {
+            // Game with audio feedback dude! The cherry for the cake
+            
+            // No sounds... Ohhh :( but the user is always right! :)
+            if (!draughts.querySelector('#sounds').checked) {
+                return;
+            }
+
+            var piece = event.detail.piece;
+            
+            var audio = document.querySelector('#audio-p' + piece.data.player());
+            
+            // Sorry IE8, you don't have audio support... :(
+            if (audio && audio.play) {
+                audio.play();
+            }
+        });
     }
     
     // Disable drag events on the body
@@ -1453,6 +1471,18 @@ window.addEventListener('load', function () {
         event.preventDefault && event.preventDefault();
         return;
     });
+    
+    // Yey we have audio
+    (function () {
+        var audio = document.createElement('audio');
+        audio.src = 'p1.wav';
+        audio.id = 'audio-p0';
+        document.body.appendChild(audio);
+        audio = document.createElement('audio');
+        audio.src = 'p2.wav';
+        audio.id = 'audio-p1';
+        document.body.appendChild(audio);
+    })();
     
     function updateBoard() {
         opt.element = draughts.querySelector('#board');

@@ -9,7 +9,7 @@
 #dash {
   margin-left: 10px;
   border: outset 10px gray;
-  height: 400px;
+  height: 478px;
 }
 
 #dash > div {
@@ -52,8 +52,8 @@
 }
 
 #board {
-    width: 400px;
-    height: 400px;
+    width: 478px;
+    height: 478px;
     border: outset 10px gray;
 }
 
