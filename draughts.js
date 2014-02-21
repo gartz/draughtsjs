@@ -1380,24 +1380,6 @@ window.addEventListener('load', function () {
     
     var board = new DraughtsBoard(opt);
     
-    function updateBoard() {
-        opt.element = draughts.querySelector('#board');
-        opt.size = draughts.querySelector('#size').value;
-        opt.forceAttack = draughts.querySelector('#forceattack').checked;
-        opt.forcePieceHold = draughts.querySelector('#forcehold').checked;
-        opt.allowBackwardAttack = draughts.querySelector('#backwardattack').checked;
-        opt.allowQueenRun = draughts.querySelector('#queenfreerun').checked;
-        opt.allowQueenAttackRun = draughts.querySelector('#queenattackrun').checked;
-        board = new DraughtsBoard(opt);
-    }
-    
-    draughts.querySelector('#size').addEventListener('change', updateBoard);
-    draughts.querySelector('#forceattack').addEventListener('change', updateBoard);
-    draughts.querySelector('#forcehold').addEventListener('change', updateBoard);
-    draughts.querySelector('#backwardattack').addEventListener('change', updateBoard);
-    draughts.querySelector('#queenfreerun').addEventListener('change', updateBoard);
-    draughts.querySelector('#queenattackrun').addEventListener('change', updateBoard);
-    
     // When gameover display the banner-msg
     draughts.addEventListener('gameover', function (event) {
         var banner = draughts.querySelector('#banner-msg');
@@ -1415,4 +1397,25 @@ window.addEventListener('load', function () {
         event.preventDefault && event.preventDefault();
         return;
     });
+    
+    function updateBoard() {
+        opt.element = draughts.querySelector('#board');
+        opt.size = draughts.querySelector('#size').value;
+        opt.forceAttack = draughts.querySelector('#forceattack').checked;
+        opt.forcePieceHold = draughts.querySelector('#forcehold').checked;
+        opt.allowBackwardAttack = draughts.querySelector('#backwardattack').checked;
+        opt.allowQueenRun = draughts.querySelector('#queenfreerun').checked;
+        opt.allowQueenAttackRun = draughts.querySelector('#queenattackrun').checked;
+        board = new DraughtsBoard(opt);
+    }
+    
+    (function () {
+        draughts.querySelector('#size').addEventListener('change', updateBoard);
+        draughts.querySelector('#forceattack').addEventListener('change', updateBoard);
+        draughts.querySelector('#forcehold').addEventListener('change', updateBoard);
+        draughts.querySelector('#backwardattack').addEventListener('change', updateBoard);
+        draughts.querySelector('#queenfreerun').addEventListener('change', updateBoard);
+        draughts.querySelector('#queenattackrun').addEventListener('change', updateBoard);
+    })();
+    
 });
