@@ -252,6 +252,11 @@ if (!Array.prototype.filter) {
         // substitute the previous div, if already has size defined for a new
         // one or the defineProperty wont work as expected
         if (this.element.size) {
+            // This is a workaround, because I would need to remove all events
+            // from the board element, to reuse it, so for demo is easier to
+            // create a new one, but it will lose the events, an oh GC I love
+            // you so mutch but, I don't have time to fix it now, I take care
+            // better of you everytime I can :~(
             var parentEl = this.element.parentElement;
             var oldEl = this.element;
             this.element = document.createElement('div');
@@ -438,6 +443,14 @@ if (!Array.prototype.filter) {
             if (piece) {
                 event.detail.field.element.appendChild(piece.element);
                 piece.board = this;
+                
+                event.detail.piece = piece;
+                event = new CustomEvent('addedpiece', {
+                    'detail': event.detail
+                });
+        
+                // Each field dispatch a addedfield event
+                this.dispatchEvent(event);
             }
             
         });
@@ -514,7 +527,7 @@ if (!Array.prototype.filter) {
             }});
             
             // trigger draughts
-            draughts.dispatchEvent(gameoverEvent);
+            this.dispatchEvent(gameoverEvent);
         });
         
         this.element.addEventListener('mousedown', function (event) {
@@ -854,7 +867,8 @@ if (!Array.prototype.filter) {
         });
         
         // Create the board
-        this.create();
+        // but a ticker after register listeners from the instance creator...
+        setTimeout(this.create.bind(this), 4);
     }
     
     DraughtsBoard.prototype = {
@@ -1169,14 +1183,17 @@ if (!Array.prototype.filter) {
         attack: function (opponent, fromField, toField) {
             
             // Create a attack event
-            var event = new CustomEvent('pieceattack', { 'detail': {
-                piece: this.element,
-                opponent: opponent,
-                field: opponent.parentElement,
-                fromField: fromField,
-                toField: toField,
-                turn: this.board.turn
-            }});
+            var event = new CustomEvent('pieceattack', { 
+                'cancelable': true,
+                'detail': {
+                    piece: this.element,
+                    opponent: opponent,
+                    field: opponent.parentElement,
+                    fromField: fromField,
+                    toField: toField,
+                    turn: this.board.turn
+                }
+            });
             
             // trigger board
             this.board.dispatchEvent(event);
@@ -1375,21 +1392,60 @@ window.addEventListener('load', function () {
         element: draughts.querySelector('#board'),
         size: 8,
         turn: 0,
-        map: maps.queenRunAttack
+        map: false
     };
     
     var board = new DraughtsBoard(opt);
     
-    // When gameover display the banner-msg
-    draughts.addEventListener('gameover', function (event) {
-        var banner = draughts.querySelector('#banner-msg');
+    function addEvents() {
+        // When gameover display the banner-msg
+        board.element.addEventListener('gameover', function (event) {
+            var banner = draughts.querySelector('#banner-msg');
+            
+            var player = banner.querySelector('h2');
+            // Using innerHTML because IE8 doesn't have textContent
+            player.innerHTML = 'Player' + (event.detail.winner + 1);
+            
+            banner.style.display = 'block';
+        });
         
-        var player = banner.querySelector('h2');
-        // Using innerHTML because IE8 doesn't have textContent
-        player.innerHTML = 'Player' + (event.detail.winner + 1);
+        board.element.addEventListener('addedpiece', function (event) {
+            // Create stash for the dashboard
+            
+            var piece = event.detail.piece;
+            var query = '#dash .player' + piece.player() + ' .captured';
+            var stash = draughts.querySelector(query);
+            
+            if (stash) {
+                stash.appendChild(document.createElement('div'));
+            }
+        });
         
-        banner.style.display = 'block';
-    });
+        board.element.addEventListener('pieceattack', function (event) {
+            // Move from the board to the dash and prevent default
+            
+            var piece = event.detail.piece;
+            var query = '#dash .player' + piece.data.player() + ' .captured > div';
+            var docks = draughts.querySelectorAll(query);
+            
+            if (docks.length === 0) {
+                return;
+            }
+            
+            // I could use some... or make a shim for IE8... but
+            for (var i = 0; i < docks.length; i++) {
+                if (docks[i].children.length === 0) {
+                    docks[i].appendChild(event.detail.opponent);
+                    
+                    // Default will remove the piece from DOM, so prevent it
+                    event.preventDefault && event.preventDefault();
+                    event.defaultPrevented = true;
+                    return;
+                }
+            }
+            
+        });
+    }
     
     // Disable drag events on the body
     window.addEventListener('dragstart', function (event) {
@@ -1407,7 +1463,13 @@ window.addEventListener('load', function () {
         opt.allowQueenRun = draughts.querySelector('#queenfreerun').checked;
         opt.allowQueenAttackRun = draughts.querySelector('#queenattackrun').checked;
         board = new DraughtsBoard(opt);
+        
+        // Sorry GC, I don't have time to shim the removeEventListener to IE8
+        // this painel is just a demo, so don't suffer please. Hope you have
+        // enougth memory to handle the bad player people that will abuse you...
+        addEvents();
     }
+    addEvents();
     
     (function () {
         draughts.querySelector('#size').addEventListener('change', updateBoard);
