@@ -1,3 +1,9 @@
+// The MIT License (MIT)
+//
+// Copyright (c) 2014 Gabriel Reitz Giannattasio (gabriel@gartz.com.br)
+//
+// Original source at: https://github.com/gartz/draughtsjs
+
 /*global CustomEvent, MouseEvent, HTMLDocument*/
 (function () {
     if (!Function.prototype.bind) {
