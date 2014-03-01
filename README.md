@@ -3,6 +3,8 @@ draughtsjs
 
 This is a Draughts, also know as Checkers or Damas, game entire made with Javascript, HTML and CSS.
 
+Demo Page: http://gartz.github.io/draughtsjs/
+
 Features
 --------
 
