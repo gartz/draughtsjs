@@ -1,6 +1,8 @@
 draughtsjs
 ==========
 
+[![Analytics](https://ga-beacon.appspot.com/UA-24619548-7/draughtsjs/readme)](https://github.com/igrigorik/ga-beacon)
+
 This is a Draughts, also know as Checkers or Damas, game entire made with Javascript, HTML and CSS.
 
 Demo Page: http://gartz.github.io/draughtsjs/
